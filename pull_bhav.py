@@ -30,7 +30,7 @@ def main(argv):
 	try:
 		opts, args = getopt.getopt(argv,"ho:",["ofile="])
 	except getopt.GetoptError:
-		print 'test.py -i <inputfile> -o <outputfile>'
+		print 'pull_bhav.py -o <sqlite_dbfile>'
 		sys.exit(2)
 
 	for opt, arg in opts:
@@ -39,7 +39,11 @@ def main(argv):
 			sys.exit()
 		elif opt in ("-o", "--ofile"):
 			dbfile = arg
-		
+	
+	if dbfile == "":
+		print 'pull_bhav.py -o <sqlite_dbfile>'
+		sys.exit(2)
+	
 	mydate =  datetime.date.today()
 	oneday = datetime.timedelta(days=1)
 	months = ["","JAN","FEB","MAR","APR","MAY","JUN","JUL","AUG","SEP","OCT","NOV","DEC"]
@@ -61,12 +65,14 @@ def main(argv):
 		diff_days = 3660
 	else:
 		#last_date = time.strptime(str(data[0][0]),"%Y-%m-%d")
-		last_date = datetime.datetime.strptime(str(data[0][0]),"%d-%b-%Y").date()
+		last_date = datetime.datetime.strptime(str(data[0][0]),"%Y-%m-%d").date()
 		#last_date = dateutil.parser.parse(str(data[0][0]))
 		diff = mydate - last_date
 		diff_days = diff.days
 	if diff_days == 0:
 		sys.exit(0)
+
+	print "To Pull data for last ", diff_days," days..."
 	try:
 		for x in range(1, diff_days):
 			mydate = mydate - oneday
@@ -97,7 +103,9 @@ def main(argv):
 				csvData = csv.reader(open(mycsv, "rb"))
 				csvData.next()
 				for row in csvData:
-					curr.execute('INSERT OR REPLACE INTO eq_daily VALUES (?,?,?,?,?,?,?,?,?,?)', (row[0],row[2],row[3],row[4],row[5],row[7],row[8],row[9],row[10],row[11]))
+					fdt = datetime.datetime.strptime(row[10],"%d-%b-%Y").date()
+					sql_dt = fdt.strftime("%Y-%m-%d")
+					curr.execute('INSERT OR REPLACE INTO eq_daily VALUES (?,?,?,?,?,?,?,?,?,?)', (row[0],row[2],row[3],row[4],row[5],row[7],row[8],row[9],sql_dt,row[11]))
 				os.remove(mycsv)
 				conn.commit()
 			os.remove("/tmp/pull_bhav.zip")
